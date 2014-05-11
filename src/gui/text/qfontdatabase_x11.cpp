@@ -1061,122 +1061,124 @@ static void loadFontConfig()
     }
 
     for (int i = 0; i < fonts->nfont; i++) {
-        if (FcPatternGetString(fonts->fonts[i], FC_FAMILY, 0, &value) != FcResultMatch)
-            continue;
-        //         capitalize(value);
-        familyName = QString::fromUtf8((const char *)value);
-        slant_value = FC_SLANT_ROMAN;
-        weight_value = FC_WEIGHT_MEDIUM;
-        spacing_value = FC_PROPORTIONAL;
-	file_value = 0;
-	index_value = 0;
-	scalable = FcTrue;
+        int j = 0;
+        while (FcPatternGetString(fonts->fonts[i], FC_FAMILY, j, &value) == FcResultMatch) {
+            //         capitalize(value);
+            familyName = QString::fromUtf8((const char *)value);
+            slant_value = FC_SLANT_ROMAN;
+            weight_value = FC_WEIGHT_MEDIUM;
+            spacing_value = FC_PROPORTIONAL;
+            file_value = 0;
+            index_value = 0;
+            scalable = FcTrue;
 
-        if (FcPatternGetInteger (fonts->fonts[i], FC_SLANT, 0, &slant_value) != FcResultMatch)
-	    slant_value = FC_SLANT_ROMAN;
-        if (FcPatternGetInteger (fonts->fonts[i], FC_WEIGHT, 0, &weight_value) != FcResultMatch)
-	    weight_value = FC_WEIGHT_MEDIUM;
-        if (FcPatternGetInteger (fonts->fonts[i], FC_SPACING, 0, &spacing_value) != FcResultMatch)
-	    spacing_value = FC_PROPORTIONAL;
-        if (FcPatternGetString (fonts->fonts[i], FC_FILE, 0, &file_value) != FcResultMatch)
-	    file_value = 0;
-        if (FcPatternGetInteger (fonts->fonts[i], FC_INDEX, 0, &index_value) != FcResultMatch)
-	    index_value = 0;
-        if (FcPatternGetBool(fonts->fonts[i], FC_SCALABLE, 0, &scalable) != FcResultMatch)
-	    scalable = FcTrue;
-        if (FcPatternGetString(fonts->fonts[i], FC_FOUNDRY, 0, &foundry_value) != FcResultMatch)
-	    foundry_value = 0;
-        if (FcPatternGetString(fonts->fonts[i], FC_STYLE, 0, &style_value) != FcResultMatch)
-            style_value = 0;
-        QtFontFamily *family = db->family(familyName, true);
+            if (FcPatternGetInteger (fonts->fonts[i], FC_SLANT, j, &slant_value) != FcResultMatch)
+                slant_value = FC_SLANT_ROMAN;
+            if (FcPatternGetInteger (fonts->fonts[i], FC_WEIGHT, j, &weight_value) != FcResultMatch)
+                weight_value = FC_WEIGHT_MEDIUM;
+            if (FcPatternGetInteger (fonts->fonts[i], FC_SPACING, j, &spacing_value) != FcResultMatch)
+                spacing_value = FC_PROPORTIONAL;
+            if (FcPatternGetString (fonts->fonts[i], FC_FILE, j, &file_value) != FcResultMatch)
+                file_value = 0;
+            if (FcPatternGetInteger (fonts->fonts[i], FC_INDEX, j, &index_value) != FcResultMatch)
+                index_value = 0;
+            if (FcPatternGetBool(fonts->fonts[i], FC_SCALABLE, j, &scalable) != FcResultMatch)
+                scalable = FcTrue;
+            if (FcPatternGetString(fonts->fonts[i], FC_FOUNDRY, j, &foundry_value) != FcResultMatch)
+                foundry_value = 0;
+            if (FcPatternGetString(fonts->fonts[i], FC_STYLE, j, &style_value) != FcResultMatch)
+                style_value = 0;
+            QtFontFamily *family = db->family(familyName, true);
 
-        FcLangSet *langset = 0;
-        FcResult res = FcPatternGetLangSet(fonts->fonts[i], FC_LANG, 0, &langset);
-        if (res == FcResultMatch) {
-            for (int i = 1; i < LanguageCount; ++i) {
-                const FcChar8 *lang = (const FcChar8*) languageForWritingSystem[i];
-                if (!lang) {
-                    family->writingSystems[i] |= QtFontFamily::UnsupportedFT;
-                } else {
-                    FcLangResult langRes = FcLangSetHasLang(langset, lang);
-                    if (langRes != FcLangDifferentLang)
-                        family->writingSystems[i] = QtFontFamily::Supported;
-                    else
+            FcLangSet *langset = 0;
+            FcResult res = FcPatternGetLangSet(fonts->fonts[i], FC_LANG, j, &langset);
+            if (res == FcResultMatch) {
+                for (int i = 1; i < LanguageCount; ++i) {
+                    const FcChar8 *lang = (const FcChar8*) languageForWritingSystem[i];
+                    if (!lang) {
                         family->writingSystems[i] |= QtFontFamily::UnsupportedFT;
+                    } else {
+                        FcLangResult langRes = FcLangSetHasLang(langset, lang);
+                        if (langRes != FcLangDifferentLang)
+                            family->writingSystems[i] = QtFontFamily::Supported;
+                        else
+                            family->writingSystems[i] |= QtFontFamily::UnsupportedFT;
+                    }
                 }
-            }
-            family->writingSystems[QFontDatabase::Other] = QtFontFamily::UnsupportedFT;
-            family->ftWritingSystemCheck = true;
-        } else {
+                family->writingSystems[QFontDatabase::Other] = QtFontFamily::UnsupportedFT;
+                family->ftWritingSystemCheck = true;
+            } else {
             // we set Other to supported for symbol fonts. It makes no
             // sense to merge these with other ones, as they are
             // special in a way.
-            for (int i = 1; i < LanguageCount; ++i)
-                family->writingSystems[i] |= QtFontFamily::UnsupportedFT;
-            family->writingSystems[QFontDatabase::Other] = QtFontFamily::Supported;
-        }
+                for (int i = 1; i < LanguageCount; ++i)
+                    family->writingSystems[i] |= QtFontFamily::UnsupportedFT;
+                family->writingSystems[QFontDatabase::Other] = QtFontFamily::Supported;
+            }
 
-        FcCharSet *cs = 0;
-        res = FcPatternGetCharSet(fonts->fonts[i], FC_CHARSET, 0, &cs);
-        if (res == FcResultMatch) {
+            FcCharSet *cs = 0;
+            res = FcPatternGetCharSet(fonts->fonts[i], FC_CHARSET, j, &cs);
+            if (res == FcResultMatch) {
             // some languages are not supported by FontConfig, we rather check the
             // charset to detect these
-            for (int i = 1; i < SampleCharCount; ++i) {
-                if (!sampleCharForWritingSystem[i])
-                    continue;
-                if (FcCharSetHasChar(cs, sampleCharForWritingSystem[i]))
-                    family->writingSystems[i] = QtFontFamily::Supported;
+                for (int i = 1; i < SampleCharCount; ++i) {
+                    if (!sampleCharForWritingSystem[i])
+                        continue;
+                    if (FcCharSetHasChar(cs, sampleCharForWritingSystem[i]))
+                        family->writingSystems[i] = QtFontFamily::Supported;
+                }
             }
-        }
 
 #if FC_VERSION >= 20297
-        for (int j = 1; j < LanguageCount; ++j) {
-            if (family->writingSystems[j] == QtFontFamily::Supported && requiresOpenType(j) && openType[j]) {
-                FcChar8 *cap;
-                res = FcPatternGetString (fonts->fonts[i], FC_CAPABILITY, 0, &cap);
-                if (res != FcResultMatch || !strstr((const char *)cap, openType[j]))
-                    family->writingSystems[j] = QtFontFamily::UnsupportedFT;
+            for (int j = 1; j < LanguageCount; ++j) {
+                if (family->writingSystems[j] == QtFontFamily::Supported && requiresOpenType(j) && openType[j]) {
+                    FcChar8 *cap;
+                    res = FcPatternGetString (fonts->fonts[i], FC_CAPABILITY, j, &cap);
+                    if (res != FcResultMatch || !strstr((const char *)cap, openType[j]))
+                        family->writingSystems[j] = QtFontFamily::UnsupportedFT;
+                }
             }
-        }
 #endif
 
-        QByteArray file((const char *)file_value);
-        family->fontFilename = file;
-        family->fontFileIndex = index_value;
+            QByteArray file((const char *)file_value);
+            family->fontFilename = file;
+            family->fontFileIndex = index_value;
 
-        QtFontStyle::Key styleKey;
-        QString styleName = style_value ? QString::fromUtf8((const char *) style_value) : QString();
-        styleKey.style = (slant_value == FC_SLANT_ITALIC)
-                         ? QFont::StyleItalic
-                         : ((slant_value == FC_SLANT_OBLIQUE)
-                            ? QFont::StyleOblique
-                            : QFont::StyleNormal);
-        styleKey.weight = getFCWeight(weight_value);
-        if (!scalable) {
-            int width = 100;
-            FcPatternGetInteger (fonts->fonts[i], FC_WIDTH, 0, &width);
-            styleKey.stretch = width;
+            QtFontStyle::Key styleKey;
+            QString styleName = style_value ? QString::fromUtf8((const char *) style_value) : QString();
+            styleKey.style = (slant_value == FC_SLANT_ITALIC)
+                ? QFont::StyleItalic
+                : ((slant_value == FC_SLANT_OBLIQUE)
+                ? QFont::StyleOblique
+                : QFont::StyleNormal);
+            styleKey.weight = getFCWeight(weight_value);
+            if (!scalable) {
+                int width = 100;
+                FcPatternGetInteger (fonts->fonts[i], FC_WIDTH, 0, &width);
+                styleKey.stretch = width;
+            }
+
+            QtFontFoundry *foundry
+                = family->foundry(foundry_value ? QString::fromUtf8((const char *)foundry_value) : QString(), true);
+            QtFontStyle *style = foundry->style(styleKey, styleName, true);
+
+            if (spacing_value < FC_MONO)
+                family->fixedPitch = false;
+
+            QtFontSize *size;
+            if (scalable) {
+                style->smoothScalable = true;
+                size = style->pixelSize(SMOOTH_SCALABLE, true);
+            } else {
+                double pixel_size = 0;
+                FcPatternGetDouble (fonts->fonts[i], FC_PIXEL_SIZE, j, &pixel_size);
+                size = style->pixelSize((int)pixel_size, true);
+            }
+            QtFontEncoding *enc = size->encodingID(-1, 0, 0, 0, 0, true);
+            enc->pitch = (spacing_value >= FC_CHARCELL ? 'c' :
+            (spacing_value >= FC_MONO ? 'm' : 'p'));
+            j++;
         }
-
-        QtFontFoundry *foundry
-            = family->foundry(foundry_value ? QString::fromUtf8((const char *)foundry_value) : QString(), true);
-        QtFontStyle *style = foundry->style(styleKey, styleName, true);
-
-        if (spacing_value < FC_MONO)
-            family->fixedPitch = false;
-
-        QtFontSize *size;
-        if (scalable) {
-            style->smoothScalable = true;
-            size = style->pixelSize(SMOOTH_SCALABLE, true);
-        } else {
-            double pixel_size = 0;
-            FcPatternGetDouble (fonts->fonts[i], FC_PIXEL_SIZE, 0, &pixel_size);
-            size = style->pixelSize((int)pixel_size, true);
-        }
-        QtFontEncoding *enc = size->encodingID(-1, 0, 0, 0, 0, true);
-        enc->pitch = (spacing_value >= FC_CHARCELL ? 'c' :
-                      (spacing_value >= FC_MONO ? 'm' : 'p'));
     }
 
     FcFontSetDestroy (fonts);
